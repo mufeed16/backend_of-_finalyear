@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info
+.env
+.venv
+venv/
+env/
+instance/
+*.log
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+ai-model
+
+# General
+.idea/
+.vscode/
+*.swp
+*.~
+*.DS_Store
