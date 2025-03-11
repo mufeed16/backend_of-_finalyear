@@ -46,8 +46,11 @@ def load_llm():
         llm = CTransformers(
             model=str(MODEL_PATH),
             model_type="llama",
-            max_new_tokens=512,
-            temperature=0.5
+            max_new_tokens=2048,
+            temperature=0.3,
+            context_length=4096,
+            n_ctx=4096, # Explicitly set n_ctx
+            gpu_layers=0  # Force CPU-only mode
         )
         logger.info("Model loaded successfully")
         return llm
@@ -55,16 +58,17 @@ def load_llm():
         logger.error(f"Error loading model: {str(e)}")
         raise
 
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.callbacks import BaseCallbackHandler, CallbackManager
 
-class QueueCallback:
+class QueueCallback(BaseCallbackHandler):
     def __init__(self, queue: Queue):
+        super().__init__()
         self.queue = queue
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
-        self.queue.put(token)
+        self.queue.put({'type': 'token', 'token': token})
 
-    def on_llm_end(self, *args, **kwargs) -> None:
+    def on_llm_end(self, response, **kwargs) -> None:
         self.queue.put(None)
 
 def qa_bot(streaming=False, queue=None):
@@ -97,7 +101,7 @@ def qa_bot(streaming=False, queue=None):
             retriever=db.as_retriever(search_kwargs={'k': 2}),
             return_source_documents=True,
             chain_type_kwargs={'prompt': qa_prompt},
-            callbacks=callbacks
+            callback_manager=CallbackManager(callbacks)
         )
         return qa
     except Exception as e:
